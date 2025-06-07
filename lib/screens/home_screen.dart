@@ -1,93 +1,106 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../models/product_model.dart';
-import '../widgets/product_card.dart';
+import 'package:http/http.dart' as http;
+import 'package:tugas3_tokoku_22421067_rifat/screens/detail_product_screen.dart';
+import 'package:tugas3_tokoku_22421067_rifat/models/product_model.dart';
 
-class HomeScreen extends StatelessWidget {
-  final List<Product> products = [
-    Product(
-      id: 1,
-      title: 'Kaos Polos',
-      price: 50000,
-      description: 'Kaos polos lengan pendek',
-      category: 'Pakaian',
-      image: 'data:image/jpeg;base64,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',
-    ),
-    Product(
-      id: 2,
-      title: 'Celana Jeans',
-      price: 150000,
-      description: 'Celana jeans slim fit',
-      category: 'Pakaian',
-      image: 'https://via.placeholder.com/150',
-    ),
-    Product(
-      id: 3,
-      title: 'Sepatu Sneakers',
-      price: 300000,
-      description: 'Sneakers putih casual',
-      category: 'Sepatu',
-      image: 'https://via.placeholder.com/150',
-    ),
-    Product(
-      id: 4,
-      title: 'Jaket Hoodie',
-      price: 200000,
-      description: 'Jaket hoodie katun',
-      category: 'Pakaian',
-      image: 'data:image/jpeg;base64,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',
-    ),
-    Product(
-      id: 5,
-      title: 'Topi Baseball',
-      price: 75000,
-      description: 'Topi gaya kasual',
-      category: 'Aksesoris',
-      image: 'https://via.placeholder.com/150',
-    ),
-    Product(
-      id: 6,
-      title: 'Kemeja Flanel',
-      price: 120000,
-      description: 'Kemeja flanel lengan panjang',
-      category: 'Pakaian',
-      image: 'https://via.placeholder.com/150',
-    ),
-    Product(
-      id: 7,
-      title: 'Tas Ransel',
-      price: 250000,
-      description: 'Tas ransel anti air',
-      category: 'Tas',
-      image: 'https://via.placeholder.com/150',
-    ),
-    Product(
-      id: 8,
-      title: 'Jam Tangan',
-      price: 175000,
-      description: 'Jam tangan digital',
-      category: 'Aksesoris',
-      image: 'https://via.placeholder.com/150',
-    ),
-  ];
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<ProductModel> _products = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProducts();
+  }
+
+  Future<void> fetchProducts() async {
+    final response = await http.get(
+      Uri.parse('https://fakestoreapi.com/products'),
+    );
+
+    debugPrint('Response: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+
+      setState(() {
+        _products = data.map((json) => ProductModel.fromJson(json)).toList();
+      });
+    } else {
+      throw Exception('Produk Gagal Diambil!');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Tokoku')),
-      body: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: GridView.builder(
-          itemCount: products.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.7, // kontrol tinggi-lebar agar seragam
-          ),
-          itemBuilder: (context, index) {
-            return ProductCard(product: products[index]);
-          },
+      appBar: AppBar(centerTitle: true, title: Text('Tokoku')),
+      body: GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.7,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
         ),
+        itemCount: _products.length,
+        itemBuilder: (context, index) {
+          final ProductModel = _products[index];
+          return GestureDetector(
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => DetailProductScreen(product: ProductModel),
+                  ),
+                ),
+            child: Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 150,
+                    width: double.infinity,
+                    child: Image.network(ProductModel.image, fit: BoxFit.cover),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Text(
+                      ProductModel.title,
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Text(
+                      'Kategori ${index + 1}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Text(
+                      '\$20.0{product.price}',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
